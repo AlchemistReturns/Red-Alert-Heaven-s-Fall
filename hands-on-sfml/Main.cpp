@@ -353,7 +353,9 @@ private:
     sf::Clock powerUpSpawnClock;
     sf::Texture backgroundTexture;
     sf::Sprite backgroundSprite;
-    sf::Texture obstacleTexture;
+    sf::Texture blockTexture;
+    sf::Texture pillarTexture;
+    sf::Texture vaseTexture;
     sf::View cameraView;
     sf::View miniMapView;  // Separate camera for mini-map
     //sf::RectangleShape miniMapBackground;  // Background of the mini-map
@@ -379,7 +381,13 @@ public:
             std::cerr << "Error loading background image!\n";
         }
 
-        if (!obstacleTexture.loadFromFile("obstacle.png")) {
+        if (!blockTexture.loadFromFile("block.png")) {
+            std::cerr << "Error loading obstacle texture!\n";
+        }
+        if (!vaseTexture.loadFromFile("vase.png")) {
+            std::cerr << "Error loading obstacle texture!\n";
+        }
+        if (!pillarTexture.loadFromFile("pillar.png")) {
             std::cerr << "Error loading obstacle texture!\n";
         }
 
@@ -392,7 +400,7 @@ public:
         player = new Player(playerTexture);
         srand(static_cast<unsigned>(time(0)));
         healthBar.setSize(sf::Vector2f(200, 20));
-        healthBar.setFillColor(sf::Color::Green);
+        healthBar.setFillColor(sf::Color::White);
         healthBar.setPosition(10, WINDOW_HEIGHT - 30);
 
         font.loadFromFile("arial.ttf");
@@ -401,8 +409,8 @@ public:
         zombieKillText.setFillColor(sf::Color::White);
         zombieKillText.setPosition(10, WINDOW_HEIGHT - 60);
 
-        obstacles.emplace_back(obstacleTexture, sf::Vector2f(100, 200));
-        obstacles.emplace_back(obstacleTexture, sf::Vector2f(500, 400));
+        obstacles.emplace_back(pillarTexture, sf::Vector2f(500, 400));
+        
 
         // Mini-map View (fixed-size)
         miniMapView.setSize(2000, 2000);  // Show full game world
