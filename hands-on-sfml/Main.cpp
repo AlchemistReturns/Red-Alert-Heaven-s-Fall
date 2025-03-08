@@ -2,6 +2,7 @@
 // SFML + C++
 
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include <vector>
 #include <cmath>
 #include <cstdlib>
@@ -311,18 +312,31 @@ public:
         soundText.setPosition(WINDOW_WIDTH / 2 - 80, WINDOW_HEIGHT / 2 + 20);
     }
 
-    void handleInput(sf::RenderWindow& window, GameState& gameState) {
+    void handleInput(sf::RenderWindow& window, GameState& gameState, sf::Music& backgroundMusic) {
         if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
             sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+
+            // Start the game when "Start Game" is clicked
             if (startText.getGlobalBounds().contains(mousePos.x, mousePos.y)) {
                 gameState = GameState::PLAYING;
             }
+
+            // Toggle sound when "Sound: On/Off" is clicked
             if (soundText.getGlobalBounds().contains(mousePos.x, mousePos.y)) {
                 soundOn = !soundOn;
                 soundText.setString(soundOn ? "Sound: On" : "Sound: Off");
+
+                // Toggle music playback
+                if (soundOn) {
+                    backgroundMusic.play();   // Resume playing
+                }
+                else {
+                    backgroundMusic.pause();  // Pause the music
+                }
             }
         }
     }
+
 
     void render(sf::RenderWindow& window) {
         window.clear();
@@ -344,6 +358,7 @@ private:
     std::vector<Zombie> zombies;
     sf::Font font;
     sf::Text zombieKillText;
+    sf::Music backgroundMusic;
     sf::RectangleShape healthBar;
     int zombiesKilled = 0;
     sf::Clock spawnClock;
@@ -463,6 +478,19 @@ public:
         //miniMapBackground.setFillColor(sf::Color(0, 0, 0, 150));  // Semi-transparent black
         //miniMapBackground.setPosition(WINDOW_WIDTH * 0.75f - 10, WINDOW_HEIGHT * 0.75f - 10);  // Align properly
 
+        // Load and play background music
+        if (!backgroundMusic.openFromFile("World War Z Theme Song.ogg")) {
+            std::cerr << "Error loading background music!" << std::endl;
+        }
+        else {
+            std::cout << "Music loaded successfully!" << std::endl;
+            backgroundMusic.setLoop(true);
+            backgroundMusic.setVolume(100);
+            backgroundMusic.play();
+            std::cout << "Music is playing..." << std::endl;
+        }
+
+
     }
 
     ~Game() {
@@ -544,8 +572,9 @@ public:
         }
 
         if (gameState == GameState::MENU) {
-            menu.handleInput(window, gameState);
+            menu.handleInput(window, gameState, backgroundMusic); // Pass backgroundMusic
         }
+
     }
 
 
