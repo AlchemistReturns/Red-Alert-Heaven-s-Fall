@@ -359,6 +359,15 @@ private:
     //sf::RectangleShape miniMapBackground;  // Background of the mini-map
     GameState gameState;
     Menu menu;
+    bool isPaused = false; // Track if the game is paused
+    sf::Text pauseText; // Pause message text
+    // Pause UI elements
+    sf::RectangleShape pauseOverlay;  // Semi-transparent background when paused
+    sf::RectangleShape pauseMenu;     // Pause menu box
+    sf::Text resumeText;              // Resume button text
+    sf::Text exitText;                // Exit button text
+
+
 
 public:
     Game() : window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Zombie Shooter"), gameState(GameState::MENU) {
@@ -389,6 +398,13 @@ public:
             float(2000) / backgroundTexture.getSize().y
         );
 
+        // Initialize Pause Text
+        pauseText.setFont(font);
+        pauseText.setString("Game Paused\nPress P to Resume");
+        pauseText.setCharacterSize(30);
+        pauseText.setFillColor(sf::Color::White);
+        pauseText.setPosition(WINDOW_WIDTH / 2 - 120, WINDOW_HEIGHT / 2 - 50);
+
         player = new Player(playerTexture);
         srand(static_cast<unsigned>(time(0)));
         healthBar.setSize(sf::Vector2f(200, 20));
@@ -397,6 +413,32 @@ public:
 
         font.loadFromFile("arial.ttf");
         zombieKillText.setFont(font);
+        
+        // Initialize Pause Overlay (semi-transparent dark background)
+        pauseOverlay.setSize(sf::Vector2f(WINDOW_WIDTH, WINDOW_HEIGHT));
+        pauseOverlay.setFillColor(sf::Color(0, 0, 0, 150)); // Dark semi-transparent overlay
+
+        // Initialize Pause Menu Box
+        pauseMenu.setSize(sf::Vector2f(300, 200));
+        pauseMenu.setFillColor(sf::Color(50, 50, 50, 220)); // Darker menu box
+        pauseMenu.setOutlineColor(sf::Color::White);
+        pauseMenu.setOutlineThickness(3);
+        pauseMenu.setPosition(WINDOW_WIDTH / 2 - 150, WINDOW_HEIGHT / 2 - 100);
+
+        // Initialize Resume Button
+        resumeText.setFont(font);
+        resumeText.setString("Resume");
+        resumeText.setCharacterSize(28);
+        resumeText.setFillColor(sf::Color::White);
+        resumeText.setPosition(WINDOW_WIDTH / 2 - 50, WINDOW_HEIGHT / 2 - 50);
+
+        // Initialize Exit Button
+        exitText.setFont(font);
+        exitText.setString("Exit");
+        exitText.setCharacterSize(28);
+        exitText.setFillColor(sf::Color::White);
+        exitText.setPosition(WINDOW_WIDTH / 2 - 30, WINDOW_HEIGHT / 2 + 20);
+
         zombieKillText.setCharacterSize(20);
         zombieKillText.setFillColor(sf::Color::White);
         zombieKillText.setPosition(10, WINDOW_HEIGHT - 60);
@@ -407,7 +449,7 @@ public:
         // Mini-map View (fixed-size)
         miniMapView.setSize(2000, 2000);  // Show full game world
         miniMapView.setViewport(sf::FloatRect(0.75f, 0.75f, 0.2f, 0.2f));  // Viewport adjusted (x, y, width, height)
-        
+
         // Mini-map Background (Fixed UI Element)
         //miniMapBackground.setSize(sf::Vector2f(160, 160));  // Match the mini-map's scaled size
         //miniMapBackground.setFillColor(sf::Color(0, 0, 0, 150));  // Semi-transparent black
@@ -463,15 +505,42 @@ public:
     void handleEvents() {
         sf::Event event;
         while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed) window.close();
-            if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
-                bullets.emplace_back(bulletTexture, player->sprite.getPosition(), player->getDirection());
+            if (event.type == sf::Event::Closed)
+                window.close();
+
+            if (event.type == sf::Event::KeyPressed) {
+                if (event.key.code == sf::Keyboard::P) {
+                    isPaused = !isPaused; // Toggle pause state
+                }
+            }
+
+            if (isPaused) {
+                // Handle mouse clicks on the pause menu buttons
+                if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
+                    sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+                    sf::Vector2f worldMousePos = window.mapPixelToCoords(mousePos);
+
+                    if (resumeText.getGlobalBounds().contains(worldMousePos)) {
+                        isPaused = false; // Resume game
+                    }
+                    else if (exitText.getGlobalBounds().contains(worldMousePos)) {
+                        window.close(); // Exit game
+                    }
+                }
+            }
+            else { // Game is not paused, allow other events
+                if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
+                    bullets.emplace_back(bulletTexture, player->sprite.getPosition(), player->getDirection());
+                }
             }
         }
+
         if (gameState == GameState::MENU) {
             menu.handleInput(window, gameState);
         }
     }
+
+
 
     void checkCollisions() {
         for (auto bulletIt = bullets.begin(); bulletIt != bullets.end();) {
@@ -537,64 +606,70 @@ public:
 
 
     void update() {
-        player->move(obstacles); // Move the player while checking collisions
-        player->updateBoosts();
-        spawnPowerUp();
-        checkPowerUpCollisions();
-        player->rotateTowardsMouse(window); // Ensure player faces the mouse
+        if (!isPaused) { // Only update if the game is not paused
+            player->move(obstacles); // Move the player while checking collisions
+            player->updateBoosts();
+            spawnPowerUp();
+            checkPowerUpCollisions();
+            player->rotateTowardsMouse(window); // Ensure player faces the mouse
 
-        //  Keep Mini-map Centered on Player
-        miniMapView.setCenter(player->sprite.getPosition());
+            // Keep Mini-map Centered on Player
+            miniMapView.setCenter(player->sprite.getPosition());
 
-        // Move the camera to follow the player
-        sf::Vector2f playerPos = player->sprite.getPosition();
-        float halfWidth = WINDOW_WIDTH / 2;
-        float halfHeight = WINDOW_HEIGHT / 2;
+            // Move the camera to follow the player
+            sf::Vector2f playerPos = player->sprite.getPosition();
+            float halfWidth = WINDOW_WIDTH / 2;
+            float halfHeight = WINDOW_HEIGHT / 2;
 
-        float minX = halfWidth, minY = halfHeight;
-        float maxX = 2000 - halfWidth;
-        float maxY = 2000 - halfHeight;
+            float minX = halfWidth, minY = halfHeight;
+            float maxX = 2000 - halfWidth;
+            float maxY = 2000 - halfHeight;
 
-        // Clamp camera position within background
-        float cameraX = std::max(minX, std::min(maxX, playerPos.x));
-        float cameraY = std::max(minY, std::min(maxY, playerPos.y));
+            // Clamp camera position within background
+            float cameraX = std::max(minX, std::min(maxX, playerPos.x));
+            float cameraY = std::max(minY, std::min(maxY, playerPos.y));
 
-        cameraView.setCenter(cameraX, cameraY);
-        window.setView(cameraView);
+            cameraView.setCenter(cameraX, cameraY);
+            window.setView(cameraView);
 
-        for (auto& bullet : bullets)
-            bullet.update(0);
+            // Update bullets
+            for (auto& bullet : bullets)
+                bullet.update(0);
 
-        for (auto& zombieBullet : zombieBullets)
-            zombieBullet.update(0);
+            for (auto& zombieBullet : zombieBullets)
+                zombieBullet.update(0);
 
-        for (auto& zombie : zombies)
-            zombie.update(0, player->sprite.getPosition(), zombieBullets, zombieBulletTexture, obstacles);
+            for (auto& zombie : zombies)
+                zombie.update(0, player->sprite.getPosition(), zombieBullets, zombieBulletTexture, obstacles);
 
-        checkCollisions();
+            checkCollisions();
 
+            // Zombie spawning logic
+            if (spawnClock.getElapsedTime().asSeconds() > zombieSpawnInterval) {
+                sf::Vector2f spawnPosition(rand() % WINDOW_WIDTH, rand() % WINDOW_HEIGHT);
+
+                // Ensure zombies don't spawn inside obstacles
+                bool validSpawn = true;
+                for (auto& obstacle : obstacles) {
+                    if (sf::FloatRect(spawnPosition.x, spawnPosition.y, 40, 40).intersects(obstacle.sprite.getGlobalBounds())) {
+                        validSpawn = false;
+                        break;
+                    }
+                }
+
+                if (validSpawn) {
+                    zombies.emplace_back(zombieTexture, spawnPosition);
+                }
+
+                spawnClock.restart();
+            }
+        }
+
+        // Always update UI elements (health bar, score) even if paused
         healthBar.setSize(sf::Vector2f(10 * player->health, 20));
         zombieKillText.setString("Zombies Killed: " + std::to_string(zombiesKilled));
-
-        if (spawnClock.getElapsedTime().asSeconds() > zombieSpawnInterval) {
-            sf::Vector2f spawnPosition(rand() % WINDOW_WIDTH, rand() % WINDOW_HEIGHT);
-
-            // Ensure zombies don't spawn inside obstacles
-            bool validSpawn = true;
-            for (auto& obstacle : obstacles) {
-                if (sf::FloatRect(spawnPosition.x, spawnPosition.y, 40, 40).intersects(obstacle.sprite.getGlobalBounds())) {
-                    validSpawn = false;
-                    break;
-                }
-            }
-
-            if (validSpawn) {
-                zombies.emplace_back(zombieTexture, spawnPosition);
-            }
-
-            spawnClock.restart();
-        }
     }
+
 
 
 
@@ -608,16 +683,15 @@ public:
             window.setView(cameraView); // Apply camera movement
             window.draw(backgroundSprite);
             player->render(window);
+
             for (auto& bullet : bullets) bullet.render(window);
             for (auto& zombieBullet : zombieBullets) zombieBullet.render(window);
             for (auto& zombie : zombies) zombie.render(window);
             for (auto& powerUp : powerUps) powerUp.render(window);
             for (auto& obstacle : obstacles) obstacle.render(window);
 
-            //  Draw the Mini-map
+            // Draw the Mini-map
             window.setView(window.getDefaultView());  // Reset to fixed UI
-            //window.draw(miniMapBackground);  // Mini-map background
-
             window.setView(miniMapView);  // Apply mini-map camera
             window.draw(backgroundSprite);  // Mini-map version of the world
 
@@ -646,6 +720,36 @@ public:
             window.setView(window.getDefaultView());
             window.draw(healthBar);
             window.draw(zombieKillText);
+
+            // **Render Pause Message if Game is Paused**
+            if (isPaused) {
+                // Get the current mouse position
+                sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+
+                // Change color when hovering over "Resume"
+                if (resumeText.getGlobalBounds().contains(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y))) {
+                    resumeText.setFillColor(sf::Color::Yellow); // Highlight when hovered
+                }
+                else {
+                    resumeText.setFillColor(sf::Color::White);  // Default color
+                }
+
+                // Change color when hovering over "Exit"
+                if (exitText.getGlobalBounds().contains(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y))) {
+                    exitText.setFillColor(sf::Color::Red); // Highlight when hovered
+                }
+                else {
+                    exitText.setFillColor(sf::Color::White); // Default color
+                }
+
+                // Draw Pause UI
+                window.draw(pauseOverlay); // Draw darkened overlay
+                window.draw(pauseMenu);    // Draw the menu box
+                window.draw(resumeText);   // Draw "Resume" button
+                window.draw(exitText);     // Draw "Exit" button
+            }
+
+
             window.display();
         }
     }
