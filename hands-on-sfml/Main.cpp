@@ -9,8 +9,8 @@
 #include <ctime>
 #include <iostream>
 
-const int WINDOW_WIDTH = 800;
-const int WINDOW_HEIGHT = 600;
+const int WINDOW_WIDTH = 1200;
+const int WINDOW_HEIGHT = 900;
 const float PLAYER_SPEED = 0.125f;
 const float BULLET_SPEED = 0.5f;
 const float ZOMBIE_SPEED = 0.005f;
@@ -20,6 +20,12 @@ const float ZOMBIE_FIRE_MIN_INTERVAL = 1.0f;
 const float ZOMBIE_FIRE_MAX_INTERVAL = 3.0f;
 const int ZOMBIE_HEALTH = 3;
 const int PLAYER_MAX_HEALTH = 20;
+
+void centerText(sf::Text& text, float windowWidth, float windowHeight, float yOffset = 0) {
+    sf::FloatRect textBounds = text.getLocalBounds();
+    text.setOrigin(textBounds.width / 2.0f, textBounds.height / 2.0f);
+    text.setPosition(windowWidth / 2.0f, (windowHeight / 2.0f) + yOffset);
+}
 
 class Entity {
 public:
@@ -302,6 +308,7 @@ private:
     sf::Font font;
     sf::Text startText;
     sf::Text soundText;
+    sf::Text title;
     bool soundOn;
     sf::Texture backgroundTexture;
     sf::Sprite backgroundSprite;
@@ -311,17 +318,23 @@ public:
         backgroundTexture.loadFromFile("menu_background.png");
         backgroundSprite.setTexture(backgroundTexture);
 
+        title.setFont(font);
+        title.setString("Red Alert");
+        title.setCharacterSize(60);
+        title.setFillColor(sf::Color::Red);
+        centerText(title, WINDOW_WIDTH, WINDOW_HEIGHT, -150);
+        
         startText.setFont(font);
         startText.setString("Start Game");
         startText.setCharacterSize(30);
         startText.setFillColor(sf::Color::White);
-        startText.setPosition(WINDOW_WIDTH / 2 - 80, WINDOW_HEIGHT / 2 - 50);
+        centerText(startText, WINDOW_WIDTH, WINDOW_HEIGHT, -50);
 
         soundText.setFont(font);
         soundText.setString("Sound: On");
         soundText.setCharacterSize(30);
         soundText.setFillColor(sf::Color::White);
-        soundText.setPosition(WINDOW_WIDTH / 2 - 80, WINDOW_HEIGHT / 2 + 20);
+        centerText(soundText, WINDOW_WIDTH, WINDOW_HEIGHT, +20);
     }
 
     void handleInput(sf::RenderWindow& window, GameState& gameState, sf::Music& backgroundMusic) {
@@ -353,6 +366,7 @@ public:
     void render(sf::RenderWindow& window) {
         window.clear();
         window.draw(backgroundSprite);
+        window.draw(title);
         window.draw(startText);
         window.draw(soundText);
         window.display();
@@ -434,8 +448,8 @@ public:
 
         backgroundSprite.setTexture(backgroundTexture);
         backgroundSprite.setScale(
-            float(1500) / backgroundTexture.getSize().x,
-            float(1167) / backgroundTexture.getSize().y
+			float(2000) / backgroundTexture.getSize().x,
+            float(2000) / backgroundTexture.getSize().y
         );
 
         // Initialize Pause Text
