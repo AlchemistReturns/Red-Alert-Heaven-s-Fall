@@ -40,8 +40,11 @@ public:
 
     Obstacle(sf::Texture& texture, sf::Vector2f position) {
         sprite.setTexture(texture);
-        sprite.setScale(0.5f, 0.5f);  // Adjust size as needed
+        sprite.setScale(1.0f, 1.0f);  // Adjust size as needed
         sprite.setPosition(position);
+
+        texture.setSmooth(true);
+
     }
 
     void render(sf::RenderWindow& window) {
@@ -76,6 +79,10 @@ public:
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) newPosition.y += PLAYER_SPEED;
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) newPosition.x -= PLAYER_SPEED;
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) newPosition.x += PLAYER_SPEED;
+
+        // Rotate by 5 degrees when left/right arrow keys are pressed
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) sprite.rotate(-0.1f);
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) sprite.rotate(0.1f);
 
         // Check collision with obstacles
         sf::FloatRect newBounds = sprite.getGlobalBounds();
@@ -139,8 +146,8 @@ public:
     }
 
     sf::Vector2f getDirection() {
-        float angle = sprite.getRotation() - 90;
-        float rad = angle * 3.14159265f / 180;
+        float angle = sprite.getRotation(); // Rotation in degrees
+        float rad = angle * 3.14159265f / 180; // Convert to radians
         return sf::Vector2f(std::cos(rad), std::sin(rad));
     }
 };
@@ -193,6 +200,7 @@ public:
     void update(float deltaTime) override {
         sprite.move(direction * BULLET_SPEED);
     }
+
 };
 
 class Zombie : public Entity {
@@ -295,9 +303,13 @@ private:
     sf::Text startText;
     sf::Text soundText;
     bool soundOn;
+    sf::Texture backgroundTexture;
+    sf::Sprite backgroundSprite;
 public:
     Menu() : soundOn(true) {
         font.loadFromFile("arial.ttf");
+        backgroundTexture.loadFromFile("menu_background.png");
+        backgroundSprite.setTexture(backgroundTexture);
 
         startText.setFont(font);
         startText.setString("Start Game");
@@ -340,6 +352,7 @@ public:
 
     void render(sf::RenderWindow& window) {
         window.clear();
+        window.draw(backgroundSprite);
         window.draw(startText);
         window.draw(soundText);
         window.display();
@@ -369,6 +382,7 @@ private:
     sf::Texture backgroundTexture;
     sf::Sprite backgroundSprite;
     sf::Texture blockTexture;
+    sf::Texture waterTexture;
     sf::Texture pillarTexture;
     sf::Texture vaseTexture;
     sf::View cameraView;
@@ -401,11 +415,14 @@ public:
         powerUpSpeedTexture.loadFromFile("powerup_speed.png");
         powerUpDamageTexture.loadFromFile("powerup_damage.png");
 
-        if (!backgroundTexture.loadFromFile("background.png")) {
+        if (!backgroundTexture.loadFromFile("background.jpg")) {
             std::cerr << "Error loading background image!\n";
         }
 
         if (!blockTexture.loadFromFile("block.png")) {
+            std::cerr << "Error loading obstacle texture!\n";
+        }
+        if (!waterTexture.loadFromFile("water.jpg")) {
             std::cerr << "Error loading obstacle texture!\n";
         }
         if (!vaseTexture.loadFromFile("vase.png")) {
@@ -417,8 +434,8 @@ public:
 
         backgroundSprite.setTexture(backgroundTexture);
         backgroundSprite.setScale(
-            float(2000) / backgroundTexture.getSize().x,
-            float(2000) / backgroundTexture.getSize().y
+            float(1500) / backgroundTexture.getSize().x,
+            float(1167) / backgroundTexture.getSize().y
         );
 
         // Initialize Pause Text
@@ -466,7 +483,10 @@ public:
         zombieKillText.setFillColor(sf::Color::White);
         zombieKillText.setPosition(10, WINDOW_HEIGHT - 60);
 
-        obstacles.emplace_back(pillarTexture, sf::Vector2f(500, 400));
+        //obstacles.emplace_back(pillarTexture, sf::Vector2f(500, 400));
+        /*obstacles.emplace_back(blockTexture, sf::Vector2f(200, 300));
+        obstacles.emplace_back(waterTexture, sf::Vector2f(500, 300));
+        obstacles.emplace_back(waterTexture, sf::Vector2f(500, 250));*/
         
 
         // Mini-map View (fixed-size)
@@ -565,7 +585,8 @@ public:
                 }
             }
             else { // Game is not paused, allow other events
-                if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
+                // Check if Spacebar is pressed to fire bullets
+                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
                     bullets.emplace_back(bulletTexture, player->sprite.getPosition(), player->getDirection());
                 }
             }
@@ -648,7 +669,7 @@ public:
             player->updateBoosts();
             spawnPowerUp();
             checkPowerUpCollisions();
-            player->rotateTowardsMouse(window); // Ensure player faces the mouse
+            //player->rotateTowardsMouse(window); // Ensure player faces the mouse
 
             // Keep Mini-map Centered on Player
             miniMapView.setCenter(player->sprite.getPosition());
