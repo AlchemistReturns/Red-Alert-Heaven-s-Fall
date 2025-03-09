@@ -1,4 +1,4 @@
-// Zombie Shooter - Object-Oriented Refactor
+﻿// Zombie Shooter - Object-Oriented Refactor
 // SFML + C++
 
 #include <SFML/Graphics.hpp>
@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <fstream> 
 
 const int WINDOW_WIDTH = 1200;
 const int WINDOW_HEIGHT = 900;
@@ -309,11 +310,13 @@ private:
     sf::Text startText;
     sf::Text soundText;
     sf::Text title;
+    sf::Text highScoreText;
     bool soundOn;
+    int highScore;
     sf::Texture backgroundTexture;
     sf::Sprite backgroundSprite;
 public:
-    Menu() : soundOn(true) {
+    Menu(int highScore) : soundOn(true), highScore(highScore) {
         font.loadFromFile("arial.ttf");
         backgroundTexture.loadFromFile("menu_background.png");
         backgroundSprite.setTexture(backgroundTexture);
@@ -335,7 +338,15 @@ public:
         soundText.setCharacterSize(30);
         soundText.setFillColor(sf::Color::White);
         centerText(soundText, WINDOW_WIDTH, WINDOW_HEIGHT, +20);
+
+        // Display high score text
+        highScoreText.setFont(font);
+        highScoreText.setString("High Score: " + std::to_string(highScore));
+        highScoreText.setCharacterSize(30);
+        highScoreText.setFillColor(sf::Color::White);
+        centerText(highScoreText, WINDOW_WIDTH, WINDOW_HEIGHT, +90);
     }
+
 
     void handleInput(sf::RenderWindow& window, GameState& gameState, sf::Music& backgroundMusic) {
         if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
@@ -369,7 +380,13 @@ public:
         window.draw(title);
         window.draw(startText);
         window.draw(soundText);
+        window.draw(highScoreText);  
         window.display();
+    }
+
+    void updateHighScore(int newHighScore) {
+        highScore = newHighScore;
+        highScoreText.setString("High Score: " + std::to_string(highScore));
     }
 };
 
@@ -388,6 +405,7 @@ private:
     sf::Music backgroundMusic;
     sf::RectangleShape healthBar;
     int zombiesKilled = 0;
+    int highScore = 0;  // ✅ Stores the highest score
     sf::Clock spawnClock;
     float zombieSpawnInterval = 3.0f;
     sf::Texture powerUpHealthTexture, powerUpSpeedTexture, powerUpDamageTexture;
@@ -415,7 +433,7 @@ private:
 
 
 public:
-    Game() : window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Zombie Shooter"), gameState(GameState::MENU) {
+    Game() : window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "Zombie Shooter"), gameState(GameState::MENU), menu(loadHighScore()) {
         // Initialize the camera view
         cameraView.setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
         cameraView.setCenter(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
@@ -560,6 +578,15 @@ public:
         }
     }
 
+    void checkHighScore() {
+        if (zombiesKilled > highScore) {
+            highScore = zombiesKilled;
+            saveHighScore();
+            menu.updateHighScore(highScore);
+        }
+    }
+
+
     void checkPowerUpCollisions() {
         for (auto it = powerUps.begin(); it != powerUps.end();) {
             if (it->sprite.getGlobalBounds().intersects(player->sprite.getGlobalBounds())) {
@@ -637,6 +664,7 @@ public:
                     if (zombieIt->health <= 0) {
                         zombiesKilled++;
                         zombieIt = zombies.erase(zombieIt);
+                        checkHighScore();
                     }
                     break;
                 }
@@ -667,7 +695,8 @@ public:
                 player->health--;
                 zombieBulletIt = zombieBullets.erase(zombieBulletIt);
                 if (player->health <= 0) {
-                    window.close(); // Player dies, close game
+                    std::cout << "Game Over! Final Score: " << zombiesKilled << std::endl;
+                    window.close();
                 }
             }
             else {
@@ -823,6 +852,25 @@ public:
 
 
             window.display();
+        }
+
+
+    }
+    int loadHighScore() {
+        std::ifstream file("highscore.txt");
+        int score = 0;
+        if (file.is_open()) {
+            file >> score;
+            file.close();
+        }
+        return score;
+    }
+
+    void saveHighScore() {
+        std::ofstream file("highscore.txt");
+        if (file.is_open()) {
+            file << highScore;
+            file.close();
         }
     }
 };
