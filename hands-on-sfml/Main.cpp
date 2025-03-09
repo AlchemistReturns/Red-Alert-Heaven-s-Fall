@@ -212,7 +212,7 @@ public:
         sprite.setPosition(position);
     }
     void update(float deltaTime) override {
-        sprite.move(direction * BULLET_SPEED);
+        sprite.move(direction * BULLET_SPEED * 0.3f);
     }
 
 };
@@ -540,7 +540,7 @@ public:
         if (!vaseTexture.loadFromFile("vase.png")) {
             std::cerr << "Error loading obstacle texture!\n";
         }
-        if (!pillarTexture.loadFromFile("pillar.png")) {
+        if (!pillarTexture.loadFromFile("cloud.png")) {
             std::cerr << "Error loading obstacle texture!\n";
         }
 
@@ -595,20 +595,13 @@ public:
         zombieKillText.setFillColor(sf::Color::White);
         zombieKillText.setPosition(10, WINDOW_HEIGHT - 60);
 
-        //obstacles.emplace_back(pillarTexture, sf::Vector2f(500, 400));
-        /*obstacles.emplace_back(blockTexture, sf::Vector2f(200, 300));
-        obstacles.emplace_back(waterTexture, sf::Vector2f(500, 300));
-        obstacles.emplace_back(waterTexture, sf::Vector2f(500, 250));*/
+        obstacles.emplace_back(pillarTexture, sf::Vector2f(1000, 800));
+        obstacles.emplace_back(pillarTexture, sf::Vector2f(300, 1200));
         
 
         // Mini-map View (fixed-size)
         miniMapView.setSize(2000, 2000);  // Show full game world
         miniMapView.setViewport(sf::FloatRect(0.75f, 0.75f, 0.2f, 0.2f));  // Viewport adjusted (x, y, width, height)
-
-        // Mini-map Background (Fixed UI Element)
-        //miniMapBackground.setSize(sf::Vector2f(160, 160));  // Match the mini-map's scaled size
-        //miniMapBackground.setFillColor(sf::Color(0, 0, 0, 150));  // Semi-transparent black
-        //miniMapBackground.setPosition(WINDOW_WIDTH * 0.75f - 10, WINDOW_HEIGHT * 0.75f - 10);  // Align properly
 
         // Load and play background music
         if (!backgroundMusic.openFromFile("World War Z Theme Song.ogg")) {
