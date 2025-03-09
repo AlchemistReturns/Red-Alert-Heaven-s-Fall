@@ -22,11 +22,18 @@ const float ZOMBIE_FIRE_MAX_INTERVAL = 3.0f;
 const int ZOMBIE_HEALTH = 3;
 const int PLAYER_MAX_HEALTH = 20;
 
-void centerText(sf::Text& text, float windowWidth, float windowHeight, float yOffset = 0) {
+void centerTextMenu(sf::Text& text, float windowWidth, float windowHeight, float yOffset = 0) {
     sf::FloatRect textBounds = text.getLocalBounds();
     text.setOrigin(textBounds.width / 2.0f, textBounds.height / 2.0f);
     text.setPosition(windowWidth / 2.0f, (windowHeight / 2.0f) + yOffset);
 }
+
+void centerTextGameOver(sf::Text& text, float windowWidth, float windowHeight, float xOffset = 0, float yOffset = 0) {
+    sf::FloatRect textBounds = text.getLocalBounds();
+    text.setOrigin(textBounds.width / 2.0f, textBounds.height / 2.0f);
+    text.setPosition((windowWidth / 2.0f) + xOffset, (windowHeight / 2.0f) + yOffset);
+}
+
 
 class Entity {
 public:
@@ -302,7 +309,7 @@ public:
 
 };
 
-enum class GameState { MENU, PLAYING };
+enum class GameState { MENU, PLAYING, GAME_OVER };
 
 class Menu {
 private:
@@ -325,26 +332,26 @@ public:
         title.setString("Red Alert");
         title.setCharacterSize(60);
         title.setFillColor(sf::Color::Red);
-        centerText(title, WINDOW_WIDTH, WINDOW_HEIGHT, -150);
+        centerTextMenu(title, WINDOW_WIDTH, WINDOW_HEIGHT, -150);
         
         startText.setFont(font);
         startText.setString("Start Game");
         startText.setCharacterSize(30);
         startText.setFillColor(sf::Color::White);
-        centerText(startText, WINDOW_WIDTH, WINDOW_HEIGHT, -50);
+        centerTextMenu(startText, WINDOW_WIDTH, WINDOW_HEIGHT, -50);
 
         soundText.setFont(font);
         soundText.setString("Sound: On");
         soundText.setCharacterSize(30);
         soundText.setFillColor(sf::Color::White);
-        centerText(soundText, WINDOW_WIDTH, WINDOW_HEIGHT, +20);
+        centerTextMenu(soundText, WINDOW_WIDTH, WINDOW_HEIGHT, +20);
 
         // Display high score text
         highScoreText.setFont(font);
         highScoreText.setString("High Score: " + std::to_string(highScore));
         highScoreText.setCharacterSize(30);
         highScoreText.setFillColor(sf::Color::White);
-        centerText(highScoreText, WINDOW_WIDTH, WINDOW_HEIGHT, +90);
+        centerTextMenu(highScoreText, WINDOW_WIDTH, WINDOW_HEIGHT, +90);
     }
 
 
@@ -391,6 +398,75 @@ public:
 };
 
 
+class GameOverScreen {
+private:
+    sf::Font font;
+    sf::Text gameOverText;
+    sf::Text scoreText;
+    sf::Text highScoreText;
+    bool isNewHighScore;
+
+public:
+    sf::Text restartText;
+    sf::Text exitText;
+    GameOverScreen() : isNewHighScore(false) {
+        font.loadFromFile("arial.ttf");
+
+        gameOverText.setFont(font);
+        gameOverText.setString("Game Over!");
+        gameOverText.setCharacterSize(60);
+        gameOverText.setFillColor(sf::Color::Red);
+        centerTextGameOver(gameOverText, WINDOW_WIDTH, WINDOW_HEIGHT, 0, -200);
+
+        scoreText.setFont(font);
+        scoreText.setCharacterSize(40);
+        scoreText.setFillColor(sf::Color::White);
+        centerTextGameOver(scoreText, WINDOW_WIDTH, WINDOW_HEIGHT, -100, -100);
+
+        highScoreText.setFont(font);
+        highScoreText.setCharacterSize(35);
+        highScoreText.setFillColor(sf::Color::Yellow);
+        centerTextGameOver(highScoreText, WINDOW_WIDTH, WINDOW_HEIGHT, -100, -50);
+
+        restartText.setFont(font);
+        restartText.setString("Press R to Restart");
+        restartText.setCharacterSize(30);
+        restartText.setFillColor(sf::Color::White);
+        centerTextGameOver(restartText, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 50);
+
+        exitText.setFont(font);
+        exitText.setString("Press Esc to Exit");
+        exitText.setCharacterSize(30);
+        exitText.setFillColor(sf::Color::White);
+        centerTextGameOver(exitText, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 130);
+    }
+
+    void setFinalScore(int score, int savedHighScore) {  
+        scoreText.setString("Final Score: " + std::to_string(score));
+
+        if (score > savedHighScore) {
+            highScoreText.setString("New High Score! Congratulations!");
+        }
+        else {
+            highScoreText.setString("High Score: " + std::to_string(savedHighScore)); 
+        }
+    }
+
+
+    void render(sf::RenderWindow& window) {
+        window.clear();
+        window.setView(window.getDefaultView());
+        window.draw(gameOverText);
+        window.draw(scoreText);
+        window.draw(highScoreText);
+        window.draw(restartText);
+        window.draw(exitText);
+        window.display();
+    }
+};
+
+
+
 class Game {
 private:
     sf::RenderWindow window;
@@ -429,6 +505,7 @@ private:
     sf::RectangleShape pauseMenu;     // Pause menu box
     sf::Text resumeText;              // Resume button text
     sf::Text exitText;                // Exit button text
+    GameOverScreen gameOverScreen;
 
 
 
@@ -442,6 +519,9 @@ public:
         bulletTexture.loadFromFile("bullet.png");
         zombieTexture.loadFromFile("zombie.png");
         zombieBulletTexture.loadFromFile("zombie_bullet.png"); // Load zombie bullet texture here
+        
+        player = new Player(playerTexture);
+        player->health = PLAYER_MAX_HEALTH;
 
         powerUpHealthTexture.loadFromFile("powerup_health.png");
         powerUpSpeedTexture.loadFromFile("powerup_speed.png");
@@ -577,12 +657,17 @@ public:
     }
 
     void checkHighScore() {
-        if (zombiesKilled > highScore) {
+        int savedHighScore = loadHighScore(); 
+        if (zombiesKilled > savedHighScore) { 
             highScore = zombiesKilled;
             saveHighScore();
             menu.updateHighScore(highScore);
         }
+        else {
+            highScore = savedHighScore; 
+        }
     }
+
 
 
     void checkPowerUpCollisions() {
@@ -597,11 +682,31 @@ public:
         }
     }
 
+    void restartGame() {  
+        gameState = GameState::PLAYING;
+        zombiesKilled = 0;
+        bullets.clear();
+        zombies.clear();
+        zombieBullets.clear();
+        player->health = PLAYER_MAX_HEALTH;
+        player->sprite.setPosition(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
+        spawnClock.restart();
+        powerUps.clear();
+        powerUpSpawnClock.restart();
+    }
+
+
+
     void handleEvents() {
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
                 window.close();
+           
+            if (gameState == GameState::MENU) {
+                menu.handleInput(window, gameState, backgroundMusic);  // ✅ Ensure the menu waits for input
+                return;  // ✅ Stop processing further events
+            }
 
             if (event.type == sf::Event::KeyPressed) {
                 if (event.key.code == sf::Keyboard::P) {
@@ -623,6 +728,31 @@ public:
                     }
                 }
             }
+
+            else if (gameState == GameState::GAME_OVER) {
+                //  Handle keyboard input for restarting or exiting
+                if (event.type == sf::Event::KeyPressed) {
+                    if (event.key.code == sf::Keyboard::R) {
+                        restartGame();  
+                    }
+                    else if (event.key.code == sf::Keyboard::Escape) {
+                        window.close(); 
+                    }
+                }
+
+                if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
+                    sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+                    sf::Vector2f worldMousePos = window.mapPixelToCoords(mousePos);
+
+                    if (gameOverScreen.restartText.getGlobalBounds().contains(worldMousePos)) {
+                        restartGame();  // 🔄 Restart Game Function
+                    }
+                    else if (gameOverScreen.exitText.getGlobalBounds().contains(worldMousePos)) {
+                        window.close(); // Exit Game
+                    }
+                }
+            }
+
             else { // Game is not paused, allow other events
                 // Check if Spacebar is pressed to fire bullets
                 if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
@@ -700,9 +830,12 @@ public:
                 player->health--;
                 zombieBulletIt = zombieBullets.erase(zombieBulletIt);
                 if (player->health <= 0) {
-                    std::cout << "Game Over! Final Score: " << zombiesKilled << std::endl;
-                    window.close();
+                    checkHighScore();
+                    int savedHighScore = loadHighScore(); 
+                    gameOverScreen.setFinalScore(zombiesKilled, savedHighScore); 
+                    gameState = GameState::GAME_OVER;
                 }
+
             }
             else {
                 ++zombieBulletIt;
@@ -712,6 +845,10 @@ public:
 
 
     void update() {
+        if (gameState == GameState::MENU) {
+            return; 
+        }
+
         if (!isPaused) { // Only update if the game is not paused
             player->move(obstacles); // Move the player while checking collisions
             player->updateBoosts();
@@ -783,6 +920,9 @@ public:
     void render() {
         if (gameState == GameState::MENU) {
             menu.render(window);
+        }
+        else if (gameState == GameState::GAME_OVER) {
+            gameOverScreen.render(window);
         }
         else {
             window.clear(sf::Color::Black); // Placeholder for game render
