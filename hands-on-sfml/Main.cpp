@@ -535,11 +535,9 @@ public:
             std::cerr << "Error loading background music!" << std::endl;
         }
         else {
-            std::cout << "Music loaded successfully!" << std::endl;
             backgroundMusic.setLoop(true);
             backgroundMusic.setVolume(100);
             backgroundMusic.play();
-            std::cout << "Music is playing..." << std::endl;
         }
 
 
