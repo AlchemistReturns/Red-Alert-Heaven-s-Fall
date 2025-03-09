@@ -139,7 +139,52 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Bullet.cpp" />
+    <ClCompile Include="Entity.cpp" />
+    <ClCompile Include="Game.cpp" />
+    <ClCompile Include="GameOverScreen.cpp" />
+    <ClCompile Include="Helper.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Menu.cpp" />
+    <ClCompile Include="Obstacle.cpp" />
+    <ClCompile Include="Player.cpp" />
+    <ClCompile Include="PowerUp.cpp" />
+    <ClCompile Include="Zombie.cpp" />
+    <ClCompile Include="ZombieBullet.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Bullet.hpp" />
+    <ClInclude Include="Constants.hpp" />
+    <ClInclude Include="Entity.hpp" />
+    <ClInclude Include="Game.hpp" />
+    <ClInclude Include="GameOverScreen.hpp" />
+    <ClInclude Include="Helper.hpp" />
+    <ClInclude Include="Menu.hpp" />
+    <ClInclude Include="Obstacle.hpp" />
+    <ClInclude Include="Player.hpp" />
+    <ClInclude Include="PowerUp.hpp" />
+    <ClInclude Include="Zombie.hpp" />
+    <ClInclude Include="ZombieBullet.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="assets\background.jpg" />
+    <Image Include="assets\block.png" />
+    <Image Include="assets\bullet.png" />
+    <Image Include="assets\cloud.png" />
+    <Image Include="assets\menu_background.jpg" />
+    <Image Include="assets\obstacle.png" />
+    <Image Include="assets\pillar.png" />
+    <Image Include="assets\player.png" />
+    <Image Include="assets\powerup_damage.png" />
+    <Image Include="assets\powerup_health.png" />
+    <Image Include="assets\powerup_speed.png" />
+    <Image Include="assets\vase.png" />
+    <Image Include="assets\water.jpg" />
+    <Image Include="assets\zombie.png" />
+    <Image Include="assets\zombie_bullet.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="assets\World War Z Theme Song.ogg" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
