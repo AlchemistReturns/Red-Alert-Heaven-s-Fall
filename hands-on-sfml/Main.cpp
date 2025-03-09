@@ -88,8 +88,8 @@ public:
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) newPosition.x += PLAYER_SPEED;
 
         // Rotate by 5 degrees when left/right arrow keys are pressed
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) sprite.rotate(-0.1f);
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) sprite.rotate(0.1f);
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) sprite.rotate(-0.05f);
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) sprite.rotate(0.05f);
 
         // Check collision with obstacles
         sf::FloatRect newBounds = sprite.getGlobalBounds();
@@ -153,7 +153,7 @@ public:
     }
 
     sf::Vector2f getDirection() {
-        float angle = sprite.getRotation(); // Rotation in degrees
+        float angle = sprite.getRotation() - 90; // Rotation in degrees
         float rad = angle * 3.14159265f / 180; // Convert to radians
         return sf::Vector2f(std::cos(rad), std::sin(rad));
     }
@@ -318,7 +318,7 @@ private:
 public:
     Menu(int highScore) : soundOn(true), highScore(highScore) {
         font.loadFromFile("arial.ttf");
-        backgroundTexture.loadFromFile("menu_background.png");
+        backgroundTexture.loadFromFile("menu_background.jpg");
         backgroundSprite.setTexture(backgroundTexture);
 
         title.setFont(font);
@@ -641,6 +641,13 @@ public:
 
     void checkCollisions() {
         for (auto bulletIt = bullets.begin(); bulletIt != bullets.end();) {
+
+            if (bulletIt->sprite.getPosition().x < 0 || bulletIt->sprite.getPosition().x > 2000 ||
+                bulletIt->sprite.getPosition().y < 0 || bulletIt->sprite.getPosition().y > 2000) {
+                bulletIt = bullets.erase(bulletIt);
+                continue; // Skip the rest and go to the next iteration
+            }
+
             bool bulletRemoved = false;
 
             // Check if bullet hits an obstacle
